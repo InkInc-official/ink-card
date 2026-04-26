@@ -294,8 +294,8 @@
     async function loadData() {
       try {
         const [todayRes, archiveRes] = await Promise.all([
-          fetch('./docs/today.json?v=' + Date.now(), { cache: 'no-store' }),
-          fetch('./docs/questions.json?v=' + Date.now(), { cache: 'no-store' })
+          fetch('./today.json?v=' + Date.now(), { cache: 'no-store' }),
+          fetch('./questions.json?v=' + Date.now(), { cache: 'no-store' })
         ]);
         const todayData = await todayRes.json();
         archive = await archiveRes.json();
