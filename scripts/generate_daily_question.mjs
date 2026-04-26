@@ -70,7 +70,7 @@ const res = await fetch(url, {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.9, topP: 0.95, maxOutputTokens: 120 }
+    generationConfig: { temperature: 0.9, topP: 0.95, maxOutputTokens: 60 }
   })
 });
 
