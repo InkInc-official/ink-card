@@ -27,26 +27,33 @@ function sample(arr, n) {
 function sanitize(q) {
   return String(q || "")
     .replace(/\r/g, "")
-    .replace(/\n{3,}/g, "\n\n")
+    .replace(/\n.*/s, "")
     .replace(/^["「『【\s]+|["」』】\s]+$/g, "")
     .trim();
+}
+
+function isComplete(q) {
+  if (!q) return false;
+  // 文末が句読点・疑問符・感嘆符・体言止めっぽい文字で終わっているか
+  return /[。？！?!か。…〜ー]$/.test(q) || q.length <= 30;
 }
 
 function looksBad(q) {
   if (!q) return true;
   if (q.length < 4) return true;
-  if (q.length > 140) return true;
+  if (q.length > 60) return true;
   if (/^\d+[.)]/.test(q)) return true;
   if (/^\d{4}[/-]\d{1,2}[/-]\d{1,2}/.test(q)) return true;
   if (/[#＃]/.test(q)) return true;
   if (/https?:\/\//.test(q)) return true;
   if (/[\u{1F000}-\u{1FAFF}]/u.test(q)) return true;
+  if (!isComplete(q)) return true;
   return false;
 }
 
-const samples = sample(archive, 12).map(s => `- ${s}`).join("\n");
-
-const prompt = `あなたは「日本語オブリーク・ストラテジーズ」的な短い問いを1つだけ生成する装置です。
+async function generate() {
+  const samples = sample(archive, 12).map(s => `- ${s}`).join("\n");
+  const prompt = `あなたは「日本語オブリーク・ストラテジーズ」的な短い問いを1つだけ生成する装置です。
 目的は"答え"を出すことではなく、人間の思考を開始させる「異物としての問い」を置くことです。
 
 # 出力ルール（厳守）
@@ -54,7 +61,8 @@ const prompt = `あなたは「日本語オブリーク・ストラテジーズ�
 - 番号・日付・作者名・引用元・ハッシュタグは禁止。
 - 箇条書き禁止。絵文字禁止。
 - クォーテーション（"「『）で囲まない。
-- 1文（長くても2文）。日本語として自然。
+- 必ず「。」「？」「か。」などで文を完結させること。途中で終わらない。
+- 20文字以内の短い1文。日本語として自然。
 - 固有名詞（企業名、SNS、時事、人物名）を避ける。
 - 既存の問いをそのままコピーしない（同文禁止）。
 
@@ -63,28 +71,36 @@ ${samples}
 
 それでは、問いを1つだけ出力せよ。`;
 
-const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.9, topP: 0.95, maxOutputTokens: 80 }
+    })
+  });
 
-const res = await fetch(url, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.9, topP: 0.95, maxOutputTokens: 60 }
-  })
-});
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Gemini API error: ${res.status}\n${t}`);
+  }
 
-if (!res.ok) {
-  const t = await res.text();
-  throw new Error(`Gemini API error: ${res.status}\n${t}`);
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return sanitize(text);
 }
 
-const data = await res.json();
-const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-const q = sanitize(text);
+// 最大3回試行
+let q = "";
+for (let i = 0; i < 3; i++) {
+  q = await generate();
+  console.log(`attempt ${i+1}:`, q);
+  if (!looksBad(q) && !archive.includes(q)) break;
+  q = "";
+}
 
-if (looksBad(q)) throw new Error("Generated question failed validation: " + q);
-if (archive.includes(q)) throw new Error("Generated question is duplicate: " + q);
+if (!q) throw new Error("Failed to generate valid question after 3 attempts");
 
 fs.writeFileSync(todayPath, JSON.stringify({ q }, null, 2) + "\n", "utf8");
 archive.push(q);
