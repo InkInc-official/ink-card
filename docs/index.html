@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Ink Card — 今日の問い</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0e0d0c;
+      --text: #e8e4dc;
+      --muted: #6a6660;
+      --border: rgba(255,255,255,0.08);
+      --accent: #c8a84b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Shippori Mincho', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      gap: 2rem;
+    }
+
+    /* ── ヘッダー ── */
+    .header {
+      text-align: center;
+      letter-spacing: 0.2em;
+    }
+    .header-by {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.25em;
+      margin-bottom: 4px;
+    }
+    .header-title {
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 0.3em;
+    }
+
+    /* ── カード ── */
+    .scene {
+      width: min(480px, 92vw);
+      height: 280px;
+      perspective: 1400px;
+      cursor: pointer;
+    }
+    .card-inner {
+      width: 100%; height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.4,0,0.2,1);
+    }
+    .card-inner.flipped { transform: rotateY(180deg); }
+
+    .card-face {
+      position: absolute; width: 100%; height: 100%;
+      backface-visibility: hidden;
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      box-sizing: border-box; overflow: hidden;
+    }
+
+    /* 表面 */
+    .card-front {
+      background: #f5f0e8;
+      border: 0.5px solid rgba(0,0,0,0.1);
+    }
+    .card-front img {
+      width: 180px; height: 180px; object-fit: contain;
+    }
+
+    /* 裏面 */
+    .card-back {
+      transform: rotateY(180deg);
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 28px 32px 22px;
+      position: relative;
+      background: #f5f0e8;
+      border: 0.5px solid rgba(0,0,0,0.1);
+      transition: background 0.3s;
+    }
+    .card-back-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: #8a7a60;
+      transition: color 0.3s;
+    }
+    .card-back-question {
+      font-size: clamp(15px, 3vw, 18px);
+      line-height: 1.9;
+      text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      color: #2a2318;
+      transition: color 0.3s;
+    }
+    .card-back-logo {
+      position: absolute;
+      bottom: 14px; right: 16px;
+      width: 52px; height: 52px;
+      object-fit: contain;
+      opacity: 0.75;
+    }
+
+    /* ── ヒント ── */
+    .hint {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+
+    /* ── テーマ選択 ── */
+    .theme-section {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .theme-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+    }
+    .theme-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .theme-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      cursor: pointer; padding: 5px;
+      border-radius: 10px; border: 1.5px solid transparent;
+      transition: border-color 0.2s;
+      background: none;
+    }
+    .theme-btn.active { border-color: var(--accent); }
+    .theme-swatch {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 0.5px solid rgba(128,128,128,0.3);
+      flex-shrink: 0;
+    }
+    .theme-name {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 9px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
+    /* ── ボタン群 ── */
+    .action-row {
+      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    }
+    .btn {
+      font-family: 'Shippori Mincho', serif;
+      font-size: 13px;
+      padding: 10px 20px;
+      border-radius: 24px;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn:hover { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.05); }
+
+    .btn-save {
+      border-color: rgba(200,168,75,0.4);
+      color: var(--accent);
+    }
+    .btn-save:hover { background: rgba(200,168,75,0.08); border-color: var(--accent); }
+
+    .btn-x {
+      background: #000;
+      color: #fff;
+      border-color: #333;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-x:hover { background: #111; border-color: #555; }
+    .x-icon { font-weight: 700; font-family: 'DM Mono', monospace; font-size: 13px; }
+
+    /* ── 通知トースト ── */
+    .toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(8px);
+      background: #1a1a1a; color: #e8e4dc;
+      font-family: 'DM Mono', monospace; font-size: 12px;
+      padding: 10px 20px; border-radius: 24px;
+      border: 0.5px solid rgba(255,255,255,0.1);
+      opacity: 0; transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── フッター ── */
+    .footer {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+    .footer a { color: var(--muted); text-decoration: none; }
+    .footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-by">INK INC. PRESENTS</div>
+    <div class="header-title">INK CARD</div>
+  </div>
+
+  <!-- カード -->
+  <div class="scene" onclick="flipCard()">
+    <div class="card-inner" id="cardInner">
+      <div class="card-face card-front" id="cardFront">
+        <img src="./assets/ink-card-logo.png" alt="">
+      </div>
+      <div class="card-face card-back" id="cardBack">
+        <div class="card-back-label" id="cardLabel">今日の問い</div>
+        <div class="card-back-question" id="cardQuestion">カードを引いて、問いを受け取る。</div>
+        <img src="./assets/ink-inc-logo.png" class="card-back-logo" alt="Ink Inc.">
+      </div>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">カードをタップして問いを開く</div>
+
+  <!-- テーマ選択 -->
+  <div class="theme-section">
+    <div class="theme-label">— THEME —</div>
+    <div class="theme-grid" id="themeGrid"></div>
+  </div>
+
+  <!-- ボタン -->
+  <div class="action-row">
+    <button class="btn" onclick="drawCard()">別のカードを引く</button>
+    <button class="btn btn-save" onclick="saveImage()">画像を保存する</button>
+    <button class="btn btn-x" onclick="postToX()">
+      <span class="x-icon">𝕏</span> Xに投稿する
+    </button>
+  </div>
+
+  <div class="footer">
+    <a href="https://inkinc-hp.vercel.app/" target="_blank">Ink Inc. — AI Creation, Human Care.</a>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const GOLD_BG   = 'linear-gradient(135deg,#b8860b 0%,#ffd700 25%,#fffacd 45%,#ffd700 60%,#b8860b 80%,#daa520 100%)';
+    const GOLD_SW   = 'linear-gradient(135deg,#b8860b 0%,#ffd700 40%,#fffacd 55%,#daa520 100%)';
+    const SILVER_BG = 'linear-gradient(135deg,#888a8e 0%,#d0d2d6 25%,#f4f4f6 45%,#c8cacd 60%,#888a8e 80%,#b0b2b6 100%)';
+    const SILVER_SW = 'linear-gradient(135deg,#888a8e 0%,#d0d2d6 40%,#f4f4f6 55%,#b0b2b6 100%)';
+
+    const themes = [
+      { bg:'#f5f0e8', text:'#2a2318', label:'#8a7a60', border:'rgba(0,0,0,0.1)',       swatch:'#f5f0e8', name:'羊皮紙の間' },
+      { bg:'#0d0d0d', text:'#e8e8e8', label:'#888888', border:'rgba(255,255,255,0.1)', swatch:'#0d0d0d', name:'真夜中の書斎' },
+      { bg:'#1c1a2e', text:'#e8e4f0', label:'#9a90b8', border:'rgba(255,255,255,0.1)', swatch:'#1c1a2e', name:'深夜ネイビー' },
+      { bg:'#2a0a0a', text:'#f5d5d0', label:'#c08888', border:'rgba(255,255,255,0.1)', swatch:'#2a0a0a', name:'深紅の刻' },
+      { bg:'#1a1500', text:'#f5e8a0', label:'#b8a840', border:'rgba(255,255,255,0.1)', swatch:'#1a1500', name:'琥珀の燈火' },
+      { bg:'#0a1a0a', text:'#c8f0c8', label:'#60a860', border:'rgba(255,255,255,0.1)', swatch:'#0a1a0a', name:'森の奥処' },
+      { bg:GOLD_BG,   text:'#3a2500', label:'#6a4a00', border:'rgba(218,165,32,0.6)',  swatch:GOLD_SW,   name:'黄金の問い' },
+      { bg:SILVER_BG, text:'#1a1a1a', label:'#505050', border:'rgba(160,162,166,0.6)', swatch:SILVER_SW, name:'白銀の静寂' },
+    ];
+
+    let archive = [];
+    let todayQ = '';
+    let currentQ = '';
+    let usedIndices = new Set();
+    let flipped = false;
+    let currentTheme = 0;
+
+    // データ読み込み
+    async function loadData() {
+      try {
+        const [todayRes, archiveRes] = await Promise.all([
+          fetch('./docs/today.json?v=' + Date.now(), { cache: 'no-store' }),
+          fetch('./docs/questions.json?v=' + Date.now(), { cache: 'no-store' })
+        ]);
+        const todayData = await todayRes.json();
+        archive = await archiveRes.json();
+        todayQ = todayData.q || '';
+        if (todayQ) {
+          currentQ = todayQ;
+          document.getElementById('cardQuestion').textContent = currentQ;
+          document.getElementById('cardLabel').textContent = '今日の問い';
+        }
+      } catch(e) {
+        console.warn('データ読み込み失敗:', e);
+      }
+    }
+
+    // テーマ生成
+    const grid = document.getElementById('themeGrid');
+    themes.forEach((t, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'theme-btn' + (i === 0 ? ' active' : '');
+      btn.innerHTML = `<div class="theme-swatch" style="background:${t.swatch};"></div><div class="theme-name">${t.name}</div>`;
+      btn.onclick = () => setTheme(i);
+      grid.appendChild(btn);
+    });
+
+    function setTheme(n) {
+      currentTheme = n;
+      const t = themes[n];
+      ['cardFront', 'cardBack'].forEach(id => {
+        const el = document.getElementById(id);
+        el.style.background = t.bg;
+        el.style.border = `0.5px solid ${t.border}`;
+      });
+      document.getElementById('cardQuestion').style.color = t.text;
+      document.getElementById('cardLabel').style.color = t.label;
+      document.querySelectorAll('.theme-btn').forEach((b, i) => b.classList.toggle('active', i === n));
+    }
+
+    function flipCard() {
+      flipped = !flipped;
+      document.getElementById('cardInner').classList.toggle('flipped', flipped);
+      document.getElementById('hint').textContent = flipped
+        ? 'もう一度タップで裏返す'
+        : 'カードをタップして問いを開く';
+    }
+
+    function drawCard() {
+      if (archive.length === 0) return;
+      if (usedIndices.size >= archive.length) usedIndices.clear();
+      let idx;
+      do { idx = Math.floor(Math.random() * archive.length); } while (usedIndices.has(idx));
+      usedIndices.add(idx);
+      currentQ = archive[idx];
+      document.getElementById('cardQuestion').textContent = currentQ;
+      document.getElementById('cardLabel').textContent = 'ランダムの問い';
+      if (flipped) {
+        document.getElementById('cardInner').classList.remove('flipped');
+        flipped = false;
+        document.getElementById('hint').textContent = 'カードをタップして問いを開く';
+      }
+    }
+
+    async function saveImage() {
+      // カードを表示状態にしてからキャプチャ
+      const wasFlipped = flipped;
+      if (!flipped) {
+        document.getElementById('cardInner').classList.add('flipped');
+        await new Promise(r => setTimeout(r, 750));
+      }
+      const cardBack = document.getElementById('cardBack');
+      try {
+        const canvas = await html2canvas(cardBack, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: null,
+          logging: false,
+        });
+        const link = document.createElement('a');
+        link.download = 'ink-card.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('画像を保存しました');
+      } catch(e) {
+        showToast('画像の保存に失敗しました');
+      }
+      if (!wasFlipped) {
+        await new Promise(r => setTimeout(r, 200));
+        document.getElementById('cardInner').classList.remove('flipped');
+        flipped = false;
+      }
+    }
+
+    function postToX() {
+      const q = currentQ || document.getElementById('cardQuestion').textContent;
+      const text = `🃏 今日の問い\n\n「${q}」\n\n💡 画像も添付する場合は「画像を保存する」で先に保存してください。\n\n#InkCard #InkInc\nhttps://inkinc-hp.vercel.app/`;
+      const url = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+      window.open(url, '_blank');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    // 初期テーマ適用
+    setTheme(0);
+    loadData();
+  </script>
+</body>
+</html>
