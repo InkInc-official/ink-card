@@ -35,7 +35,7 @@ function sanitize(q) {
 function isComplete(q) {
   if (!q) return false;
   // 文末が句読点・疑問符・感嘆符・体言止めっぽい文字で終わっているか
-  return /[。？！?!か。…〜ー]$/.test(q) || q.length <= 30;
+  return /[。？！?!か。…〜ー]$/.test(q) || q.length >= 6;
 }
 
 function looksBad(q) {
@@ -77,7 +77,7 @@ ${samples}
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.9, topP: 0.95, maxOutputTokens: 80 }
+      generationConfig: { temperature: 0.9, topP: 0.95, maxOutputTokens: 200 }
     })
   });
 
