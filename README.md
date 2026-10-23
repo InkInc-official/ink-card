@@ -112,7 +112,7 @@ Ink Card は **Ink Inc.** が制作・公開しているツールです。
 Ink Inc. は IRIAM を中心に活動するAIライバー事務所です。  
 「AIによる創造、人によるケア」をコンセプトに、配信者を支援するツール群（Ink Tools）を無償公開しています。
 
-- 公式サイト：[https://inkinc-hp.vercel.app/](https://inkinc-hp.vercel.app/)
+- 公式サイト：[https://inkinc-hp.pages.dev/](https://inkinc-hp.pages.dev/)
 - X：[@InkInc_Info](https://x.com/InkInc_Info)
 - YouTube：[@InkInc.official](https://www.youtube.com/@InkInc.official)
 
@@ -131,4 +131,4 @@ Ink Inc. は IRIAM を中心に活動するAIライバー事務所です。
 ---
 
 *AI Creation, Human Care. The Future Drawn Together.*  
-*[Ink Inc.](https://inkinc-hp.vercel.app/)*
+*[Ink Inc.](https://inkinc-hp.pages.dev/)*
