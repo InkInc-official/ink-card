@@ -132,3 +132,7 @@ Ink Inc. は IRIAM を中心に活動するAIライバー事務所です。
 
 *AI Creation, Human Care. The Future Drawn Together.*  
 *[Ink Inc.](https://inkinc-hp.pages.dev/)*
+
+---
+
+Created by **Ink Inc.** / 黒井葉跡 (Kuroi Haato) — https://inkinc-hp.pages.dev/
